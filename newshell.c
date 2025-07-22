@@ -376,5 +376,10 @@ int main(int argc, char *argv[]) {
     }
     if (input != stdin) fclose(input);
     clear_history();
+
+    //clean up memory
+    for (int i = 0; i < path_count; i++){
+        free(custom_paths[i]);
+    }
     return 0;
 }
