@@ -10,10 +10,14 @@
 #define MAX_LINE 512
 #define MAX_ARGS 100
 #define HISTORY_SIZE 20
-#define MAX_ALIASES 100 //mox number of aliases
+#define MAX_ALIASES 100 //max number of aliases
+#define MAX_PATHS 100 //max number of pathes
 
 char *history[HISTORY_SIZE];
 int history_count = 0;
+
+char *custom_paths[MAX_PATHS];
+int path_count = 0;
 
 void print_error() {
     char error_message[30] = "An error has occurred\n";
@@ -280,12 +284,53 @@ void execute_command(char *cmd) {
         }
 
         // Execute
-        execvp(args[0], args);
+        //execvp(args[0], args);
+        for(int i = 0; i < path_count; i++){
+            char full_path[512];
+            snprintf(full_path, sizeof(full_path), "%s/%s", custom_paths[i], args[0]);
+            execv(full_path, args);
+        }
+        
         print_error();
         exit(1);
     } else {
         wait(NULL);
     }
+
+    //implement
+    else if(strcmp(args[0], "path") == 0){
+        if (args[1] == NULL){
+            for (int i = 0; i < path_count; i++){
+                printf("%s", custom_paths[i]);
+                if (i != path_count - 1) printf(":");
+            }
+            printf("\n");
+        }
+        else if(strcmp(args[1], "+") == 0 && args [2]){
+            if (path_count < MAX_PATHS) {
+                custom_paths[path_count++] = strdup(args[2]);
+            }
+            else {
+                print_error();
+            }
+            else if(strcmp(args[1], "-") == 0 && args[2]) {
+                int removed = 0;
+                for (int i = 0; i < path_count; i++){
+                    if (strcmp(custom_paths[i], args[2]) == 0){
+                        free(custom+aths[i]);
+                        for(int j = i; j < path_count - 1; j++)
+                            custom_paths[j] = custom_paths[j + 1];
+                        path_count--;
+                        removed = 1;
+                        break;
+                    }
+                }
+                if(!removed) print_error();
+            } else {
+                print_error();
+            }
+            return;
+        }
 }
 
 void process_line(char *line) {
@@ -300,6 +345,13 @@ void process_line(char *line) {
 int main(int argc, char *argv[]) {
     FILE *input = stdin;
     char line[MAX_LINE];
+
+    char *env_path = getenv("PATH");
+    char *tok = strtok(env_path, ":");
+    while (tok && path_count < MAX_PATHS) {
+        custom_paths[path_count++] = strdup(tok);
+        tok = strtok(NULL, ":");
+    }
 
     if (argc == 2) {
         input = fopen(argv[1], "r");
@@ -321,6 +373,11 @@ int main(int argc, char *argv[]) {
 
     if (input != stdin) fclose(input);
     clear_history();
+
+    //clean up memoruy
+    for (int i = 0; i < path_count; i++){
+        free(custom_paths[i]);
+    }
     return 0;
 }
 
