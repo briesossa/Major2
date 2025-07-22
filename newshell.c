@@ -358,6 +358,12 @@ void process_line(char *line) {
 int main(int argc, char *argv[]) {
     FILE *input = stdin;
     char line[MAX_LINE];
+    char *env_path = getenv("PATH");
+    char *tok = strtok(env_path, ":");
+    while (tok && path_count < MAX_PATHS) {
+        custom_paths[path_count++] = strdup(tok);
+        tok = strtok(NULL, ":");
+    }
     if (argc == 2) {
         input = fopen(argv[1], "r");
         if (!input) {
