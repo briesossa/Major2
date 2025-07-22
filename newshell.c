@@ -304,6 +304,42 @@ void execute_command(char *cmd) {
     } else {
         wait(NULL);
     }
+
+    //implement
+    else if(strcmp(args[0], "path") == 0){
+        if (args[1] == NULL){
+            for (int i = 0; i < path_count; i++){
+                printf("%s", custom_paths[i]);
+                if (i != path_count - 1) printf(":");
+            }
+            printf("\n");
+        }
+        else if(strcmp(args[1], "+") == 0 && args [2]){
+            if (path_count < MAX_PATHS) {
+                custom_paths[path_count++] = strdup(args[2]);
+            }
+            else {
+                print_error();
+            }
+            else if(strcmp(args[1], "-") == 0 && args[2]) {
+                int removed = 0;
+                for (int i = 0; i < path_count; i++){
+                    if (strcmp(custom_paths[i], args[2]) == 0){
+                        free(custom+aths[i]);
+                        for(int j = i; j < path_count - 1; j++)
+                            custom_paths[j] = custom_paths[j + 1];
+                        path_count--;
+                        removed = 1;
+                        break;
+                    }
+                }
+                if(!removed) print_error();
+            } else {
+                print_error();
+            }
+            return;
+        }
+    
 }
 
 void process_line(char *line) {
