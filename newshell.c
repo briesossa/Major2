@@ -18,6 +18,7 @@
 #define HISTORY_SIZE 20
 #define MAX_ALIASES 100
 #define MAX_PIPE_CMDS 3
+#define MAX_PATHS 100
 
 char *history[HISTORY_SIZE];
 int history_count = 0;
@@ -292,7 +293,12 @@ void execute_command(char *cmd) {
             dup2(fd, STDOUT_FILENO);
             close(fd);
         }
-        execvp(args[0], args);
+        //execvp(args[0], args);
+        for(int i = 0; i < path_count; i++){
+            char full_path[512];
+            snprintf(full_path, sizeof(full_path), "%s/%s", custom_paths[i], args[0]);
+            execv(full_path, args);
+        }
         print_error();
         exit(1);
     } else {
