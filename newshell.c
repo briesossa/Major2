@@ -10,6 +10,7 @@
 #define MAX_LINE 512
 #define MAX_ARGS 100
 #define HISTORY_SIZE 20
+#define MAX_ALIASES 100 //mox number of aliases
 
 char *history[HISTORY_SIZE];
 int history_count = 0;
@@ -61,6 +62,93 @@ void handle_history_command(char *arg) {
     }
 }
 
+typedef struct {        //struct to define an alias
+    char *command;  //command part
+    char *name;     //name part
+}   Alias;
+
+Alias alias_list[MAX_ALIASES];  //alias_list array
+int alias_count = 0;    //alias_list size
+
+void add_alias(char *arg) { //adds alias to alias_list
+
+    char *copy = strdup(arg);   //copies arg to not cause possible problems later
+
+    //splits arg into usable strings
+    char *name = strtok(copy, "=");
+    char *command_quotes = strtok(NULL, "=");
+    char *command_no_quotes = malloc(strlen(command_quotes) + 1);
+
+    //removes single quotes from command str
+    int j = 0;
+    for (int i = 0; i < strlen(command_quotes); ++i) {
+        if (!command_quotes) {
+            print_error();
+            return;
+        }
+        if (command_quotes[i] != '\'') {
+            command_no_quotes[j] = command_quotes[i];
+            j++;
+        }
+    }
+    command_no_quotes[j] = '\0';
+
+    //creates alias
+    for (int i = 0; i < alias_count; ++i) {
+        if (strcmp(alias_list[i].name, name) == 0) {
+            free(alias_list[i].command);
+            alias_list[i].command = command_no_quotes;
+            return;
+        }
+    }
+
+    //adds alias to alias_list
+    if (alias_count < MAX_ALIASES) {
+        alias_list[alias_count].name = strdup(name);
+        alias_list[alias_count].command = strdup(command_no_quotes);
+        alias_count++;
+    } else {
+        print_error();
+        printf("Alias list is full\n");
+    }
+}
+
+void print_alias_list() {
+
+    //checks if alias_list is empty, if not, prints alias_list
+    if (alias_count == 0) {
+        printf("Alias list is empty\n");
+    }
+    else {
+        for (int i = 0; i < alias_count; ++i) {
+            printf("%s: %s\n", alias_list[i].name, alias_list[i].command);
+        }
+    }
+}
+
+void alias_remove(char *arg) {
+
+    //removes/deletes specified alias from alias_list
+    for(int i = 0; i < alias_count; ++i) {
+        if (strcmp(alias_list[i].name, arg) == 0)
+        {
+            free(alias_list[i].name);
+            free(alias_list[i].command);
+            --alias_count;
+        }
+    }
+}
+
+void alias_remove_all() {
+
+    //removes/deletes all aliases from alias_list
+    for (int i = 0; i < alias_count; ++i) {
+        free(alias_list[i].name);
+        free(alias_list[i].command);
+    }
+    alias_count = 0;
+}
+
 void execute_command(char *cmd) {
     char *args[MAX_ARGS];
     int arg_idx = 0;
@@ -68,7 +156,7 @@ void execute_command(char *cmd) {
     // Redirection flags
     char *input_file = NULL;
     char *output_file = NULL;
-    
+
     // Check for redirection symbols
     char *in_redirect = strchr(cmd, '<');
     char *out_redirect = strchr(cmd, '>');
@@ -103,6 +191,68 @@ void execute_command(char *cmd) {
         if (args[1]) handle_history_command(args[1]);
         else print_history();
         return;
+    } else if (strcmp(args[0], "alias") == 0) {
+
+        int arg_num = 0;
+        while (args[arg_num] != NULL) {arg_num++;}
+
+        if (arg_num == 1) {
+            print_alias_list();
+            return;
+        } else if (arg_num == 2) {
+            if (strchr(args[1], '=') != NULL) { //checks if second arg has equal sign
+                add_alias(args[1]);
+                return;
+            } else if (strcmp(args[1], "-c") == 0) {
+                alias_remove_all();
+                return;
+            }
+        } else if (arg_num == 3) {
+            if (strcmp(args[1], "-r") == 0) {
+                alias_remove(args[2]);
+                return;
+            }
+        }
+        return;
+    } else if (strcmp(args[0], "man") == 0) {
+        if (args[1] && strcmp(args[1], "alias") == 0) {
+            printf("alias is used to create aliases/shortcuts for commands\n");
+            printf("alias <name>='<command>'    : creates a new alias\n");
+            printf("alias -r <name>             : removes an alias\n");
+            printf("alias -c                    : removes all aliases\n");
+            printf("alias                       : lists all aliases\n");
+            printf("<name>                      : executes alias cmd\n");
+        }
+    }
+
+    //checks for if the entered command matches an alias in alias_list and then tokenizes alias command
+    for (int i = 0; i < alias_count; ++i) {
+        if (strcmp(args[0], alias_list[i].name) == 0) {
+            char *alias_cmd_copy = strdup(alias_list[i].command);
+
+            int og_count = 0; //original count of args
+            char *original_args[MAX_ARGS];
+            for (int j = 1; j < MAX_ARGS && args[j] != NULL; ++j) {
+                original_args[og_count++] = args[j];
+            }
+
+            //tokenizes alias command to be properly executed
+            arg_idx = 0;
+            char *alias_token = strtok(alias_cmd_copy, " \t\n");
+            while (alias_token != NULL && arg_idx < MAX_ARGS - 1) {
+                args[arg_idx++] = alias_token;
+                alias_token = strtok(NULL, " \t\n");
+            }
+
+            for (int j = 0; j < og_count && args[j] != NULL; ++j) {     //appends remaining args to end of aliased cmd
+                if (arg_idx < MAX_ARGS - 1) {
+                    args[arg_idx++] = original_args[j];
+                }
+            }
+
+            args[arg_idx] = NULL;
+            break;
+        }
     }
 
     pid_t pid = fork();
@@ -173,3 +323,4 @@ int main(int argc, char *argv[]) {
     clear_history();
     return 0;
 }
+
