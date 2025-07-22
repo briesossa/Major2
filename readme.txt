@@ -16,3 +16,7 @@ alias -c                            : removes all aliases from alias list
 alias                               : lists all aliases within alias list
 <name>                              : executes alias command from alias list
 
+Path Usage:
+path                                : prints the current path list
+path + <dir>                        : appends a directory 
+path - <dir>                        : removes a directory
