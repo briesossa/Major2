@@ -7,6 +7,12 @@
 #include <errno.h>
 #include <signal.h>
 
+// 7/21/25
+// CSCE 3600.001
+// Brianna Jackson, Lucero Torres, Anthony Ayala, Alexandre DeWolf
+// This program has two main functions. Batch mode and Interactive mode. Interactive mode allows the user to manually input commands into the prompt.
+// In batch mode, you provide a batch file that contains a list on commands to be executed. This program can take those commands and echo them to the user before executing them.
+
 #define MAX_LINE 512
 #define MAX_ARGS 100
 #define HISTORY_SIZE 20
